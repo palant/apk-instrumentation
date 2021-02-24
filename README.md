@@ -34,13 +34,23 @@ Each component has a `filter` option allowing to restrict its functionality. Itâ
 
 ## MethodLogger component
 
-This component will add a `System.out.println()` call to the start of each method. It will print the method name and parameter values to the log.
+This component will add logging to the start of each method. In addition to the method signature, the parameter values will be logged.
 
 Configuration options:
 
 * `MethodLogger.enabled`: add to enable this component
 * `MethodLogger.filter`: (optional) restricts functionality to a set of classes or methods (see Filters section above)
-* `MethodLogger.tag`: (optional) log tag to be used (default is `APKInstrumentation`)
+* `MethodLogger.tag`: (optional) log tag to be used (default is `MethodLogger`)
+
+## DownloadLogger component
+
+This component will log calls to `URL.openConnection()`. It will log the calling method and the URL target.
+
+Configuration options:
+
+* `DownloadLogger.enabled`: add to enable this component
+* `DownloadLogger.filter`: (optional) restricts functionality to a set of classes or methods (see Filters section above)
+* `DownloadLogger.tag`: (optional) log tag to be used (default is `DownloadLogger`)
 
 ## AssignmentRemover component
 

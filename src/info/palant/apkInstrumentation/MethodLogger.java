@@ -32,8 +32,6 @@ public class MethodLogger extends BodyTransformer
   private final Filter filter;
   private String tag;
 
-  private final SootMethod method_Log_i;
-  private final SootMethod method_Object_toString;
   private final SootMethod method_StringBuilder_init;
   private final SootMethod method_StringBuilder_append;
 
@@ -43,11 +41,8 @@ public class MethodLogger extends BodyTransformer
     Scene.v().addBasicClass("java.lang.Object", SootClass.SIGNATURES);
     Scene.v().addBasicClass("java.lang.String", SootClass.SIGNATURES);
     Scene.v().addBasicClass("java.lang.StringBuilder", SootClass.SIGNATURES);
-    Scene.v().addBasicClass("java.lang.System", SootClass.SIGNATURES);
     Scene.v().loadNecessaryClasses();
 
-    this.method_Log_i = Scene.v().getMethod("<android.util.Log: int i(java.lang.String,java.lang.String)>");
-    this.method_Object_toString = Scene.v().getMethod("<java.lang.Object: java.lang.String toString()>");
     this.method_StringBuilder_init = Scene.v().getMethod("<java.lang.StringBuilder: void <init>(java.lang.String)>");
     this.method_StringBuilder_append = Scene.v().getMethod("<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)>");
 
@@ -59,7 +54,7 @@ public class MethodLogger extends BodyTransformer
 
     this.tag = config.getProperty("MethodLogger.tag");
     if (tag == null)
-      tag = "APKInstrumentation";
+      tag = "MethodLogger";
   }
 
   @Override
@@ -69,13 +64,12 @@ public class MethodLogger extends BodyTransformer
     if (this.filter != null && !this.filter.matches(body))
       return;
 
-    List<Unit> units = new ArrayList<>();
+    UnitSequence units = new UnitSequence(body);
 
-    Local messageStringified = Utils.generateNewLocal(body, RefType.v("java.lang.String"));
     List<Local> parameters = body.getParameterLocals();
     if (parameters.size() > 0)
     {
-      Local message = Utils.generateNewLocal(body, RefType.v("java.lang.StringBuilder"));
+      Local message = units.newLocal(RefType.v("java.lang.StringBuilder"));
       units.add(
         Jimple.v().newAssignStmt(
           message,
@@ -111,48 +105,22 @@ public class MethodLogger extends BodyTransformer
           );
         }
 
-        Local stringified = Utils.generateNewLocal(body, RefType.v("java.lang.String"));
-        units.add(Utils.stringify(parameter, stringified));
+        parameter = units.stringify(parameter);
         units.add(
           Jimple.v().newInvokeStmt(
             Jimple.v().newVirtualInvokeExpr(
               message,
               this.method_StringBuilder_append.makeRef(),
-              stringified
+              parameter
             )
           )
         );
       }
 
-      units.add(
-        Jimple.v().newAssignStmt(
-          messageStringified,
-          Jimple.v().newVirtualInvokeExpr(
-            message,
-            this.method_Object_toString.makeRef()
-          )
-        )
-      );
+      units.log(this.tag, units.stringify(message));
     }
     else
-    {
-      units.add(
-        Jimple.v().newAssignStmt(
-          messageStringified,
-          StringConstant.v("Entered method " + body.getMethod().getSignature())
-        )
-      );
-    }
-
-    units.add(
-      Jimple.v().newInvokeStmt(
-        Jimple.v().newStaticInvokeExpr(
-          this.method_Log_i.makeRef(),
-          StringConstant.v(this.tag),
-          messageStringified
-        )
-      )
-    );
+      units.log(this.tag, StringConstant.v("Entered method " + body.getMethod().getSignature()));
 
     body.getUnits().insertBefore(units, body.getFirstNonIdentityStmt());
     body.validate();

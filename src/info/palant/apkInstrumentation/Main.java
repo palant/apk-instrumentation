@@ -138,6 +138,11 @@ public class Main
       PackManager.v().getPack("jtp").add(new Transform("jtp.AssignmentRemover", new AssignmentRemover(config)));
       hasTransformers = true;
     }
+    if (config.getProperty("DownloadLogger.enabled") != null)
+    {
+      PackManager.v().getPack("jtp").add(new Transform("jtp.DownloadLogger", new DownloadLogger(config)));
+      hasTransformers = true;
+    }
 
     if (!hasTransformers)
     {
@@ -195,7 +200,7 @@ public class Main
   {
     ProcessBuilder builder = new ProcessBuilder(command);
     builder.inheritIO();
-    Process process = builder.start();//Runtime.getRuntime().exec(command);
+    Process process = builder.start();
     try
     {
       int result = process.waitFor();
