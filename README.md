@@ -4,7 +4,7 @@
 
 ## Getting started
 
-You can download `apk-instrumentation.jar` from the Releases section of this repository. It is self-contained and requires nothing but Java. If you want to build it yourself, you will need Python 3 and Soot (JAR file with all dependencies). You then run the build command:
+You can download `apk-instrumentation.jar` from the [Releases section](https://github.com/palant/apk-instrumentation/releases) of this repository. It is self-contained and requires nothing but Java. If you want to build it yourself, you will need Python 3 and Soot (JAR file with all dependencies). You then run the build command:
 
     ./build /path/to/soot-jar-with-dependencies.jar
 
@@ -26,7 +26,7 @@ The following configuration options are independent of the components enabled:
 
 ## Filters
 
-Each component has a `filter` option allowing to restrict its functionality. It’s a space-separated list, entries can have to following format:
+Each component has a `filter` option allowing to restrict its functionality. It’s a space-separated list, entries can have the following format:
 
 * `com.example.test.*`: includes all classes with names matching a particular prefix
 * `com.example.test.Main`: includes all methods of a specific class
