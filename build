@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import zipfile
+
+if len(sys.argv) < 2:
+    print('Please provide path to soot-jar-with-dependencies.jar on the command line', file=sys.stderr)
+    sys.exit(1)
+soot = sys.argv[1]
+basedir = os.path.dirname(sys.argv[0]) or os.getcwd()
+
+if 'JAVA_HOME' in os.environ:
+    javac = os.path.join(os.environ['JAVA_HOME'], 'bin', 'javac')
+    jar = os.path.join(os.environ['JAVA_HOME'], 'bin', 'jar')
+else:
+    javac = 'javac'
+    jar = 'jar'
+
+def listFiles(dir, extension):
+    result = []
+    for dirpath, dirnames, filenames in os.walk(dir):
+        for filename in filenames:
+            if os.path.splitext(filename)[1] == extension:
+                result.append(os.path.relpath(os.path.join(dirpath, filename), dir))
+    return result
+
+classdir = tempfile.mkdtemp()
+try:
+    source_dir = os.path.join(basedir, 'src')
+    sources = listFiles(source_dir, '.java')
+    subprocess.check_call([javac, '-d', classdir, *sources], cwd=source_dir, env={'CLASSPATH': soot})
+
+    outfile = os.path.abspath(os.path.join(basedir, 'apk-instrumentation.jar'))
+    classes = listFiles(classdir, '.class')
+    manifest_path = os.path.abspath(os.path.join(source_dir, 'Manifest.txt'))
+    subprocess.check_call([jar, 'cfm', outfile, manifest_path, *classes], cwd=classdir)
+finally:
+    shutil.rmtree(classdir)
+
+with zipfile.ZipFile(soot, 'r') as archive_in:
+    with zipfile.ZipFile(outfile, 'a') as archive_out:
+        for entry in archive_in.infolist():
+            if not entry.filename.startswith('META-INF/'):
+                archive_out.writestr(entry, archive_in.read(entry))
