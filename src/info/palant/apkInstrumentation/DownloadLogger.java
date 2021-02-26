@@ -233,23 +233,11 @@ public class DownloadLogger extends BodyTransformer
               units.getIdentity(thisRef)
             );
 
-            Local loggingStream = units.newLocal(RefType.v(INPUT_STREAM_CLASS));
-            units.add(
-              Jimple.v().newAssignStmt(
-                loggingStream,
-                Jimple.v().newNewExpr(RefType.v(INPUT_STREAM_CLASS))
-              )
-            );
-            units.add(
-              Jimple.v().newInvokeStmt(
-                Jimple.v().newSpecialInvokeExpr(
-                  loggingStream,
-                  Scene.v().getSootClass(INPUT_STREAM_CLASS).getMethod("void <init>(java.io.InputStream,java.lang.String,java.lang.String)").makeRef(),
-                  result,
-                  StringConstant.v(this.tag),
-                  formatStr
-                )
-              )
+            Local loggingStream = units.newObject(
+              INPUT_STREAM_CLASS,
+              result,
+              StringConstant.v(this.tag),
+              formatStr
             );
             units.add(
               Jimple.v().newAssignStmt(
@@ -286,23 +274,11 @@ public class DownloadLogger extends BodyTransformer
               units.getIdentity(thisRef)
             );
 
-            Local loggingStream = units.newLocal(RefType.v(OUTPUT_STREAM_CLASS));
-            units.add(
-              Jimple.v().newAssignStmt(
-                loggingStream,
-                Jimple.v().newNewExpr(RefType.v(OUTPUT_STREAM_CLASS))
-              )
-            );
-            units.add(
-              Jimple.v().newInvokeStmt(
-                Jimple.v().newSpecialInvokeExpr(
-                  loggingStream,
-                  Scene.v().getSootClass(OUTPUT_STREAM_CLASS).getMethod("void <init>(java.io.OutputStream,java.lang.String,java.lang.String)").makeRef(),
-                  result,
-                  StringConstant.v(this.tag),
-                  formatStr
-                )
-              )
+            Local loggingStream = units.newObject(
+              OUTPUT_STREAM_CLASS,
+              result,
+              StringConstant.v(this.tag),
+              formatStr
             );
             units.add(
               Jimple.v().newAssignStmt(

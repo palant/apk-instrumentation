@@ -93,6 +93,37 @@ public class UnitSequence extends ArrayList<Unit>
     return result;
   }
 
+  public Local newObject(String type, Value... params)
+  {
+    return this.newObject(RefType.v(type), params);
+  }
+
+  public Local newObject(RefType type, Value... params)
+  {
+    Local object = this.newLocal(type);
+    this.add(
+      Jimple.v().newAssignStmt(
+        object,
+        Jimple.v().newNewExpr(type)
+      )
+    );
+
+    ArrayList<Type> paramTypes = new ArrayList<Type>();
+    for (Value param: params)
+      paramTypes.add(param.getType());
+    this.add(
+      Jimple.v().newInvokeStmt(
+        Jimple.v().newSpecialInvokeExpr(
+          object,
+          type.getSootClass().getMethod("<init>", paramTypes).makeRef(),
+          params
+        )
+      )
+    );
+
+    return object;
+  }
+
   public Local arrayLiteral(Type elementType, Value... elements)
   {
     Type arrayType = ArrayType.v(elementType, 1);

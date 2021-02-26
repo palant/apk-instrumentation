@@ -32,7 +32,6 @@ public class MethodLogger extends BodyTransformer
   private final Filter filter;
   private String tag;
 
-  private final SootMethod method_StringBuilder_init;
   private final SootMethod method_StringBuilder_append;
 
   public MethodLogger(Properties config)
@@ -43,7 +42,6 @@ public class MethodLogger extends BodyTransformer
     Scene.v().addBasicClass("java.lang.StringBuilder", SootClass.SIGNATURES);
     Scene.v().loadNecessaryClasses();
 
-    this.method_StringBuilder_init = Scene.v().getMethod("<java.lang.StringBuilder: void <init>(java.lang.String)>");
     this.method_StringBuilder_append = Scene.v().getMethod("<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)>");
 
     String filterSpec = config.getProperty("MethodLogger.filter");
@@ -69,22 +67,9 @@ public class MethodLogger extends BodyTransformer
     List<Local> parameters = body.getParameterLocals();
     if (parameters.size() > 0)
     {
-      Local message = units.newLocal(RefType.v("java.lang.StringBuilder"));
-      units.add(
-        Jimple.v().newAssignStmt(
-          message,
-          Jimple.v().newNewExpr(RefType.v("java.lang.StringBuilder"))
-        )
-      );
-
-      units.add(
-        Jimple.v().newInvokeStmt(
-          Jimple.v().newSpecialInvokeExpr(
-            message,
-            this.method_StringBuilder_init.makeRef(),
-            StringConstant.v("Entered method " + body.getMethod().getSignature() + " with parameters: ")
-          )
-        )
+      Local message = units.newObject(
+        "java.lang.StringBuilder",
+        StringConstant.v("Entered method " + body.getMethod().getSignature() + " with parameters: ")
       );
 
       boolean first = true;
