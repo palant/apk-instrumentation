@@ -44,13 +44,15 @@ Configuration options:
 
 ## DownloadLogger component
 
-This component will log calls to `URL.openConnection()`. It will log the calling method and the URL target.
+This component will `URLConnection` interactions.
 
 Configuration options:
 
 * `DownloadLogger.enabled`: add to enable this component
 * `DownloadLogger.filter`: (optional) restricts functionality to a set of classes or methods (see Filters section above)
 * `DownloadLogger.tag`: (optional) log tag to be used (default is `DownloadLogger`)
+* `DownloadLogger.requestBodies`: (optional) if present, data sent via the connection will be logged
+* `DownloadLogger.responses`: (optional) if present, data received via the connection will be logged
 
 ## AssignmentRemover component
 

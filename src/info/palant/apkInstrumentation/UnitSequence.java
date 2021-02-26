@@ -22,6 +22,7 @@ import soot.Value;
 import soot.javaToJimple.LocalGenerator;
 import soot.jimple.IntConstant;
 import soot.jimple.Jimple;
+import soot.jimple.NullConstant;
 import soot.jimple.StringConstant;
 
 public class UnitSequence extends ArrayList<Unit>
@@ -120,8 +121,12 @@ public class UnitSequence extends ArrayList<Unit>
   public Local format(Value formatStr, Value... args)
   {
     for (int i = 0; i < args.length; i++)
-      if (args[i].getType() instanceof PrimType)
+    {
+      if (args[i] == null)
+        args[i] = NullConstant.v();
+      else if (args[i].getType() instanceof PrimType)
         args[i] = this.boxPrimitive(args[i]);
+    }
     Local argsArray = this.arrayLiteral(RefType.v("java.lang.Object"), args);
 
     Local result = this.newLocal(RefType.v("java.lang.String"));

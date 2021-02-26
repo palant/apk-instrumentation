@@ -32,7 +32,24 @@ classdir = tempfile.mkdtemp()
 try:
     source_dir = os.path.join(basedir, 'src')
     sources = listFiles(source_dir, '.java')
-    subprocess.check_call([javac, '-d', classdir, *sources], cwd=source_dir, env={'CLASSPATH': soot})
+
+    subprocess.check_call([
+        javac, '-d', classdir,
+        '-Xlint:unchecked',
+        '-sourcepath', '.',
+        os.path.join('info', 'palant', 'apkInstrumentation', 'Main.java')
+    ], cwd=source_dir, env={'CLASSPATH': soot})
+
+    # Use Java 1.7 compile target for injected classes, avoid constructs that
+    # Android verifier will reject.
+    subprocess.check_call([
+        javac, '-d', classdir,
+        '-source', '1.7', '-target', '1.7',
+        '-Xlint:unchecked',
+        '-sourcepath', '.',
+        os.path.join('info', 'palant', 'apkInstrumentation', 'LoggingInputStream.java'),
+        os.path.join('info', 'palant', 'apkInstrumentation', 'LoggingOutputStream.java')
+    ], cwd=source_dir, env={'CLASSPATH': soot})
 
     outfile = os.path.abspath(os.path.join(basedir, 'apk-instrumentation.jar'))
     classes = listFiles(classdir, '.class')

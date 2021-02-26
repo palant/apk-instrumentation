@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.net.URL;
+import java.net.JarURLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -104,6 +106,21 @@ public class Main
     }
   }
 
+  private static String getJARPath()
+  {
+    try
+    {
+      URL url = Main.class.getClassLoader().getResource("info/palant/apkInstrumentation/Main.class");
+      JarURLConnection connection = (JarURLConnection)url.openConnection();
+      return connection.getJarFile().getName();
+    }
+    catch (IOException e)
+    {
+      e.printStackTrace();
+      return null;
+    }
+  }
+
   private static void setupSoot(String platformsPath, String tempDir, String inputFile)
   {
     // Reset all Soot settings
@@ -117,7 +134,9 @@ public class Main
     Options.v().set_android_jars(platformsPath);
     Options.v().set_src_prec(Options.src_prec_apk);
     Options.v().set_process_dir(Collections.singletonList(inputFile));
+    Options.v().set_soot_classpath(getJARPath());
     Options.v().set_include_all(true);
+    Options.v().set_ignore_resolving_levels(true);
 
     // Write (APK Generation) Options
     Options.v().set_output_format(Options.output_format_dex);
