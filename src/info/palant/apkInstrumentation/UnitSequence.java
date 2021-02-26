@@ -6,6 +6,7 @@
 
 package info.palant.apkInstrumentation;
 
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -16,6 +17,7 @@ import soot.Local;
 import soot.PrimType;
 import soot.RefType;
 import soot.Scene;
+import soot.SootMethod;
 import soot.Type;
 import soot.Unit;
 import soot.Value;
@@ -43,54 +45,36 @@ public class UnitSequence extends ArrayList<Unit>
 
   public void log(String tag, Value message)
   {
-    this.add(
-      Jimple.v().newInvokeStmt(
-        Jimple.v().newStaticInvokeExpr(
-          Scene.v().getMethod("<android.util.Log: int i(java.lang.String,java.lang.String)>").makeRef(),
-          StringConstant.v(tag),
-          message
-        )
-      )
-    );
+    this.call(RefType.v("android.util.Log"), "i", StringConstant.v(tag), message);
   }
 
   public Local stringify(Value value)
   {
     Type type = value.getType();
-    String typeSignature = (type instanceof PrimType ? type.toString() : "java.lang.Object");
-    if (typeSignature == "byte" || typeSignature == "short")
-      typeSignature = "int";
+    if (type instanceof PrimType)
+      type = Type.toMachineType(type);
+    else
+      type = RefType.v("java.lang.Object");
 
-    Local result = this.newLocal(RefType.v("java.lang.String"));
-    this.add(
-      Jimple.v().newAssignStmt(
-        result,
-        Jimple.v().newStaticInvokeExpr(
-          Scene.v().getMethod("<java.lang.String: java.lang.String valueOf(" + typeSignature + ")>").makeRef(),
-          value
-        )
-      )
+    return this.call(
+      RefType.v("java.lang.String").getSootClass().getMethod("valueOf", Collections.singletonList(type)),
+      RefType.v("java.lang.String"),
+      value
     );
-    return result;
   }
 
   public Local boxPrimitive(Value value)
   {
-    PrimType origType = (PrimType)value.getType();
-    RefType boxedType = origType.boxedType();
-    Local result = this.newLocal(boxedType);
+    RefType boxedType = ((PrimType)value.getType()).boxedType();
+    return this.call(boxedType, "valueOf", boxedType, value);
+  }
 
-    this.add(
-      Jimple.v().newAssignStmt(
-        result,
-        Jimple.v().newStaticInvokeExpr(
-          boxedType.getSootClass().getMethod("valueOf", Collections.singletonList(origType)).makeRef(),
-          value
-        )
-      )
-    );
-
-    return result;
+  public static List<Type> toTypes(Value... values)
+  {
+    ArrayList<Type> types = new ArrayList<Type>();
+    for (Value value: values)
+      types.add(value.getType());
+    return types;
   }
 
   public Local newObject(String type, Value... params)
@@ -100,22 +84,12 @@ public class UnitSequence extends ArrayList<Unit>
 
   public Local newObject(RefType type, Value... params)
   {
-    Local object = this.newLocal(type);
-    this.add(
-      Jimple.v().newAssignStmt(
-        object,
-        Jimple.v().newNewExpr(type)
-      )
-    );
-
-    ArrayList<Type> paramTypes = new ArrayList<Type>();
-    for (Value param: params)
-      paramTypes.add(param.getType());
+    Local object = this.assign(Jimple.v().newNewExpr(type));
     this.add(
       Jimple.v().newInvokeStmt(
         Jimple.v().newSpecialInvokeExpr(
           object,
-          type.getSootClass().getMethod("<init>", paramTypes).makeRef(),
+          type.getSootClass().getMethod("<init>", toTypes(params)).makeRef(),
           params
         )
       )
@@ -127,26 +101,99 @@ public class UnitSequence extends ArrayList<Unit>
   public Local arrayLiteral(Type elementType, Value... elements)
   {
     Type arrayType = ArrayType.v(elementType, 1);
-    Local array = this.newLocal(arrayType);
-    this.add(
-      Jimple.v().newAssignStmt(
-        array,
-        Jimple.v().newNewArrayExpr(elementType, IntConstant.v(elements.length))
-      )
-    );
+    Local array = this.assign(Jimple.v().newNewArrayExpr(elementType, IntConstant.v(elements.length)));
 
     int index = 0;
     for (Value element: elements)
     {
-      this.add(
-        Jimple.v().newAssignStmt(
-          Jimple.v().newArrayRef(array, IntConstant.v(index++)),
-          element
-        )
+      this.assign(
+        Jimple.v().newArrayRef(array, IntConstant.v(index++)),
+        element
       );
     }
 
     return array;
+  }
+
+  public Local assign(Value value)
+  {
+    return this.assign(value.getType(), value);
+  }
+
+  public Local assign(Type type, Value value)
+  {
+    Local result = this.newLocal(type);
+    this.assign(result, value);
+    return result;
+  }
+
+  public void assign(Value left, Value right)
+  {
+    this.add(Jimple.v().newAssignStmt(left, right));
+  }
+
+  public void call(RefType type, String name, Value... params)
+  {
+    this.call(type.getSootClass().getMethod(name, toTypes(params)), params);
+  }
+
+  public void call(SootMethod method, Value... params)
+  {
+    this.add(Jimple.v().newInvokeStmt(
+      Jimple.v().newStaticInvokeExpr(
+        method.makeRef(),
+        params
+      )
+    ));
+  }
+
+  public Local call(RefType type, String name, Type returnType, Value... params)
+  {
+    return this.call(type.getSootClass().getMethod(name, toTypes(params)), returnType, params);
+  }
+
+  public Local call(SootMethod method, Type returnType, Value... params)
+  {
+    return this.assign(
+      returnType,
+      Jimple.v().newStaticInvokeExpr(
+        method.makeRef(),
+        params
+      )
+    );
+  }
+
+  public void call(Local base, String name, Value... params)
+  {
+    this.call(base, ((RefType)base.getType()).getSootClass().getMethod(name, toTypes(params)), params);
+  }
+
+  public void call(Local base, SootMethod method, Value... params)
+  {
+    this.add(Jimple.v().newInvokeStmt(
+      Jimple.v().newVirtualInvokeExpr(
+        base,
+        method.makeRef(),
+        params
+      )
+    ));
+  }
+
+  public Local call(Local base, String name, Type returnType, Value... params)
+  {
+    return this.call(base, ((RefType)base.getType()).getSootClass().getMethod(name, toTypes(params)), returnType, params);
+  }
+
+  public Local call(Local base, SootMethod method, Type returnType, Value... params)
+  {
+    return this.assign(
+      returnType,
+      Jimple.v().newVirtualInvokeExpr(
+        base,
+        method.makeRef(),
+        params
+      )
+    );
   }
 
   public Local format(Value formatStr, Value... args)
@@ -160,32 +207,12 @@ public class UnitSequence extends ArrayList<Unit>
     }
     Local argsArray = this.arrayLiteral(RefType.v("java.lang.Object"), args);
 
-    Local result = this.newLocal(RefType.v("java.lang.String"));
-    this.add(
-      Jimple.v().newAssignStmt(
-        result,
-        Jimple.v().newStaticInvokeExpr(
-          Scene.v().getMethod("<java.lang.String: java.lang.String format(java.lang.String,java.lang.Object[])>").makeRef(),
-          formatStr,
-          argsArray
-        )
-      )
-    );
-    return result;
+    return this.call(RefType.v("java.lang.String"), "format", RefType.v("java.lang.String"), formatStr, argsArray);
   }
 
   public Local getIdentity(Value obj)
   {
-    Local result = this.newLocal(IntType.v());
-    this.add(
-      Jimple.v().newAssignStmt(
-        result,
-        Jimple.v().newStaticInvokeExpr(
-          Scene.v().getMethod("<java.lang.System: int identityHashCode(java.lang.Object)>").makeRef(),
-          obj
-        )
-      )
-    );
-    return result;
+    SootMethod method = RefType.v("java.lang.System").getSootClass().getMethod("identityHashCode", Collections.singletonList(RefType.v("java.lang.Object")));
+    return this.call(method, IntType.v(), obj);
   }
 }

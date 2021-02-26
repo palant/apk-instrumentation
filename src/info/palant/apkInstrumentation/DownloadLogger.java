@@ -131,11 +131,10 @@ public class DownloadLogger extends BodyTransformer
   {
     UnitSequence units = new UnitSequence(body);
 
-    Local message = units.format(
+    units.log(this.tag, units.format(
       StringConstant.v(formatStr),
       argSupplier.apply(units)
-    );
-    units.log(this.tag, message);
+    ));
 
     body.getUnits().insertAfter(units, insertAfter);
     body.validate();
@@ -233,18 +232,12 @@ public class DownloadLogger extends BodyTransformer
               units.getIdentity(thisRef)
             );
 
-            Local loggingStream = units.newObject(
+            units.assign(result, units.newObject(
               INPUT_STREAM_CLASS,
               result,
               StringConstant.v(this.tag),
               formatStr
-            );
-            units.add(
-              Jimple.v().newAssignStmt(
-                result,
-                loggingStream
-              )
-            );
+            ));
 
             body.getUnits().insertAfter(units, unit);
             body.validate();
@@ -274,18 +267,12 @@ public class DownloadLogger extends BodyTransformer
               units.getIdentity(thisRef)
             );
 
-            Local loggingStream = units.newObject(
+            units.assign(result, units.newObject(
               OUTPUT_STREAM_CLASS,
               result,
               StringConstant.v(this.tag),
               formatStr
-            );
-            units.add(
-              Jimple.v().newAssignStmt(
-                result,
-                loggingStream
-              )
-            );
+            ));
 
             body.getUnits().insertAfter(units, unit);
             body.validate();

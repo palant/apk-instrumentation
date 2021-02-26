@@ -32,8 +32,6 @@ public class MethodLogger extends BodyTransformer
   private final Filter filter;
   private String tag;
 
-  private final SootMethod method_StringBuilder_append;
-
   public MethodLogger(Properties config)
   {
     Scene.v().addBasicClass("android.util.Log", SootClass.SIGNATURES);
@@ -41,8 +39,6 @@ public class MethodLogger extends BodyTransformer
     Scene.v().addBasicClass("java.lang.String", SootClass.SIGNATURES);
     Scene.v().addBasicClass("java.lang.StringBuilder", SootClass.SIGNATURES);
     Scene.v().loadNecessaryClasses();
-
-    this.method_StringBuilder_append = Scene.v().getMethod("<java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)>");
 
     String filterSpec = config.getProperty("MethodLogger.filter");
     if (filterSpec != null)
@@ -78,28 +74,9 @@ public class MethodLogger extends BodyTransformer
         if (first)
           first = false;
         else
-        {
-          units.add(
-            Jimple.v().newInvokeStmt(
-              Jimple.v().newVirtualInvokeExpr(
-                message,
-                this.method_StringBuilder_append.makeRef(),
-                StringConstant.v(", ")
-              )
-            )
-          );
-        }
+          units.call(message, "append", StringConstant.v(", "));
 
-        parameter = units.stringify(parameter);
-        units.add(
-          Jimple.v().newInvokeStmt(
-            Jimple.v().newVirtualInvokeExpr(
-              message,
-              this.method_StringBuilder_append.makeRef(),
-              parameter
-            )
-          )
-        );
+        units.call(message, "append", units.stringify(parameter));
       }
 
       units.log(this.tag, units.stringify(message));
