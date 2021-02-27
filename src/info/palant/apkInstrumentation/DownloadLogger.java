@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.function.Function;
 
 import soot.Body;
 import soot.Local;
@@ -125,12 +124,24 @@ public class DownloadLogger extends BodyTransformer
     }
   }
 
-  private void insertLogging(Body body, Unit insertAfter, String formatStr, Function<UnitSequence,Value[]> argSupplier)
+  private void insertLogging(Body body, Unit insertAfter, String formatStr, Value[] args)
   {
     UnitSequence units = new UnitSequence(body);
+
+    // %x is the identity parameter, call getIdentity() for the corresponding value
+    int index = -1;
+    for (int i = 0; i < args.length; i++)
+    {
+      index = formatStr.indexOf('%', index + 1);
+      if (index < 0)
+        break;
+      if (index + 1 < formatStr.length() && formatStr.charAt(index + 1) == 'x' && i < args.length)
+        args[i] = (args[i] == null ? IntConstant.v(0) : units.getIdentity(args[i]));
+    }
+
     units.log(this.tag, units.format(
       formatStr,
-      argSupplier.apply(units)
+      args
     ));
     units.insertAfter(insertAfter);
   }
@@ -165,12 +176,10 @@ public class DownloadLogger extends BodyTransformer
       {
         this.insertLogging(
           body, unit, "Method %s opened URLConnection %x to URL %s",
-          units -> {
-            return new Value[] {
-              StringConstant.v(body.getMethod().getSignature()),
-              result == null ? IntConstant.v(0) : units.getIdentity(result),
-              thisRef
-            };
+          new Value[] {
+            StringConstant.v(body.getMethod().getSignature()),
+            result,
+            thisRef
           }
         );
       }
@@ -181,36 +190,30 @@ public class DownloadLogger extends BodyTransformer
           case "void addRequestProperty(java.lang.String,java.lang.String)":
             this.insertLogging(
               body, unit, "Method %s added request property to URLConnection %x: %s=%s",
-              units -> {
-                return new Value[] {
-                  StringConstant.v(body.getMethod().getSignature()),
-                  units.getIdentity(thisRef),
-                  invocation.getArg(0),
-                  invocation.getArg(1)
-                };
+              new Value[] {
+                StringConstant.v(body.getMethod().getSignature()),
+                thisRef,
+                invocation.getArg(0),
+                invocation.getArg(1)
               }
             );
             break;
           case "void connect()":
             this.insertLogging(
               body, unit, "Method %s called connect() on URLConnection %x",
-              units -> {
-                return new Value[] {
-                  StringConstant.v(body.getMethod().getSignature()),
-                  units.getIdentity(thisRef)
-                };
+              new Value[] {
+                StringConstant.v(body.getMethod().getSignature()),
+                thisRef
               }
             );
             break;
           case "int getContentLength()":
             this.insertLogging(
               body, unit, "Method %s retrieved content length on URLConnection %x (%i)",
-              units -> {
-                return new Value[] {
-                  StringConstant.v(body.getMethod().getSignature()),
-                  units.getIdentity(thisRef),
-                  result
-                };
+              new Value[] {
+                StringConstant.v(body.getMethod().getSignature()),
+                thisRef,
+                result
               }
             );
             break;
@@ -239,12 +242,10 @@ public class DownloadLogger extends BodyTransformer
           case "java.lang.String getContentType()":
             this.insertLogging(
               body, unit, "Method %s retrieved content type on URLConnection %x (%s)",
-              units -> {
-                return new Value[] {
-                  StringConstant.v(body.getMethod().getSignature()),
-                  units.getIdentity(thisRef),
-                  result
-                };
+              new Value[] {
+                StringConstant.v(body.getMethod().getSignature()),
+                thisRef,
+                result
               }
             );
             break;
@@ -273,37 +274,31 @@ public class DownloadLogger extends BodyTransformer
           case "java.lang.String getHeaderField(java.lang.String)":
             this.insertLogging(
               body, unit, "Method %s retrieved header field %s on URLConnection %x (%s)",
-              units -> {
-                return new Value[] {
-                  StringConstant.v(body.getMethod().getSignature()),
-                  invocation.getArg(0),
-                  units.getIdentity(thisRef),
-                  result
-                };
+              new Value[] {
+                StringConstant.v(body.getMethod().getSignature()),
+                invocation.getArg(0),
+                thisRef,
+                result
               }
             );
             break;
           case "int getResponseCode()":
             this.insertLogging(
               body, unit, "Method %s retrieved response code on URLConnection %x (%i)",
-              units -> {
-                return new Value[] {
-                  StringConstant.v(body.getMethod().getSignature()),
-                  units.getIdentity(thisRef),
-                  result
-                };
+              new Value[] {
+                StringConstant.v(body.getMethod().getSignature()),
+                thisRef,
+                result
               }
             );
             break;
           case "void setRequestMethod(java.lang.String)":
             this.insertLogging(
               body, unit, "Method %s set request method on URLConnection %x to %s",
-              units -> {
-                return new Value[] {
-                  StringConstant.v(body.getMethod().getSignature()),
-                  units.getIdentity(thisRef),
-                  invocation.getArg(0)
-                };
+              new Value[] {
+                StringConstant.v(body.getMethod().getSignature()),
+                thisRef,
+                invocation.getArg(0)
               }
             );
             break;
