@@ -6,7 +6,6 @@
 
 package info.palant.apkInstrumentation;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -14,17 +13,8 @@ import java.util.Properties;
 import soot.Body;
 import soot.BodyTransformer;
 import soot.Local;
-import soot.RefType;
 import soot.Scene;
 import soot.SootClass;
-import soot.SootMethod;
-import soot.SootField;
-import soot.Type;
-import soot.Unit;
-import soot.jimple.AssignStmt;
-import soot.jimple.IntConstant;
-import soot.jimple.Jimple;
-import soot.jimple.JimpleBody;
 import soot.jimple.StringConstant;
 
 public class MethodLogger extends BodyTransformer
@@ -52,9 +42,8 @@ public class MethodLogger extends BodyTransformer
   }
 
   @Override
-  protected void internalTransform(Body b, String phaseName, Map<String, String> options)
+  protected void internalTransform(Body body, String phaseName, Map<String, String> options)
   {
-    JimpleBody body = (JimpleBody)b;
     if (this.filter != null && !this.filter.matches(body))
       return;
 
@@ -84,7 +73,6 @@ public class MethodLogger extends BodyTransformer
     else
       units.log(this.tag, StringConstant.v("Entered method " + body.getMethod().getSignature()));
 
-    body.getUnits().insertBefore(units, body.getFirstNonIdentityStmt());
-    body.validate();
+    units.insertBefore();
   }
 }

@@ -29,8 +29,6 @@ import soot.jimple.InstanceInvokeExpr;
 import soot.jimple.IntConstant;
 import soot.jimple.InvokeExpr;
 import soot.jimple.InvokeStmt;
-import soot.jimple.Jimple;
-import soot.jimple.JimpleBody;
 import soot.jimple.SpecialInvokeExpr;
 import soot.jimple.StringConstant;
 
@@ -90,7 +88,7 @@ public class DownloadLogger extends BodyTransformer
       if (!method.getName().equals("<init>"))
         continue;
 
-      JimpleBody body = (JimpleBody)method.retrieveActiveBody();
+      Body body = method.retrieveActiveBody();
       Unit remove = null;
       Local casted = null;
       for (Unit unit: body.getUnits())
@@ -127,23 +125,19 @@ public class DownloadLogger extends BodyTransformer
     }
   }
 
-  private void insertLogging(JimpleBody body, Unit insertAfter, String formatStr, Function<UnitSequence,Value[]> argSupplier)
+  private void insertLogging(Body body, Unit insertAfter, String formatStr, Function<UnitSequence,Value[]> argSupplier)
   {
     UnitSequence units = new UnitSequence(body);
-
     units.log(this.tag, units.format(
-      StringConstant.v(formatStr),
+      formatStr,
       argSupplier.apply(units)
     ));
-
-    body.getUnits().insertAfter(units, insertAfter);
-    body.validate();
+    units.insertAfter(insertAfter);
   }
 
   @Override
-  protected void internalTransform(Body b, String phaseName, Map<String, String> options)
+  protected void internalTransform(Body body, String phaseName, Map<String, String> options)
   {
-    JimpleBody body = (JimpleBody)b;
     if (this.filter != null && !this.filter.matches(body))
       return;
 
@@ -228,7 +222,7 @@ public class DownloadLogger extends BodyTransformer
             UnitSequence units = new UnitSequence(body);
 
             Local formatStr = units.format(
-              StringConstant.v("Received data from URLConnection %x: \"%%s\""),
+              "Received data from URLConnection %x: \"%%s\"",
               units.getIdentity(thisRef)
             );
 
@@ -239,8 +233,7 @@ public class DownloadLogger extends BodyTransformer
               formatStr
             ));
 
-            body.getUnits().insertAfter(units, unit);
-            body.validate();
+            units.insertAfter(unit);
             break;
           }
           case "java.lang.String getContentType()":
@@ -263,7 +256,7 @@ public class DownloadLogger extends BodyTransformer
             UnitSequence units = new UnitSequence(body);
 
             Local formatStr = units.format(
-              StringConstant.v("Sent data to URLConnection %x: \"%%s\""),
+              "Sent data to URLConnection %x: \"%%s\"",
               units.getIdentity(thisRef)
             );
 
@@ -274,8 +267,7 @@ public class DownloadLogger extends BodyTransformer
               formatStr
             ));
 
-            body.getUnits().insertAfter(units, unit);
-            body.validate();
+            units.insertAfter(unit);
             break;
           }
           case "java.lang.String getHeaderField(java.lang.String)":

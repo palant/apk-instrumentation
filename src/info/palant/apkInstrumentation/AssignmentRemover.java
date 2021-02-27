@@ -12,7 +12,6 @@ import java.util.Properties;
 import soot.Body;
 import soot.BodyTransformer;
 import soot.jimple.AssignStmt;
-import soot.jimple.JimpleBody;
 
 public class AssignmentRemover extends BodyTransformer
 {
@@ -33,9 +32,8 @@ public class AssignmentRemover extends BodyTransformer
   }
 
   @Override
-  protected void internalTransform(Body b, String phaseName, Map<String, String> options)
+  protected void internalTransform(Body body, String phaseName, Map<String, String> options)
   {
-    JimpleBody body = (JimpleBody)b;
     if (this.filter != null && !this.filter.matches(body))
       return;
 

@@ -24,17 +24,21 @@ import soot.Value;
 import soot.javaToJimple.LocalGenerator;
 import soot.jimple.IntConstant;
 import soot.jimple.Jimple;
+import soot.jimple.JimpleBody;
 import soot.jimple.NullConstant;
 import soot.jimple.StringConstant;
 
 public class UnitSequence extends ArrayList<Unit>
 {
+  private boolean inserted;
+  private Body body;
   private LocalGenerator generator;
 
   public UnitSequence(Body body)
   {
     super();
 
+    this.body = body;
     this.generator = new LocalGenerator(body);
   }
 
@@ -113,6 +117,11 @@ public class UnitSequence extends ArrayList<Unit>
     }
 
     return array;
+  }
+
+  public Local cast(Value value, Type type)
+  {
+    return this.assign(type, Jimple.v().newCastExpr(value, type));
   }
 
   public Local assign(Value value)
@@ -196,6 +205,11 @@ public class UnitSequence extends ArrayList<Unit>
     );
   }
 
+  public Local format(String formatStr, Value... args)
+  {
+    return this.format(StringConstant.v(formatStr), args);
+  }
+
   public Local format(Value formatStr, Value... args)
   {
     for (int i = 0; i < args.length; i++)
@@ -212,7 +226,32 @@ public class UnitSequence extends ArrayList<Unit>
 
   public Local getIdentity(Value obj)
   {
-    SootMethod method = RefType.v("java.lang.System").getSootClass().getMethod("identityHashCode", Collections.singletonList(RefType.v("java.lang.Object")));
-    return this.call(method, IntType.v(), obj);
+    obj = this.cast(obj, RefType.v("java.lang.Object"));
+    return this.call(RefType.v("java.lang.System"), "identityHashCode", IntType.v(), obj);
+  }
+
+  public void insertBefore()
+  {
+    this.insertBefore(((JimpleBody)this.body).getFirstNonIdentityStmt());
+  }
+
+  public void insertBefore(Unit unit)
+  {
+    if (this.inserted)
+      throw new RuntimeException("Attempt to insert a unit sequence twice");
+
+    this.inserted = true;
+    this.body.getUnits().insertBefore(this, unit);
+    this.body.validate();
+  }
+
+  public void insertAfter(Unit unit)
+  {
+    if (this.inserted)
+      throw new RuntimeException("Attempt to insert a unit sequence twice");
+
+    this.inserted = true;
+    this.body.getUnits().insertAfter(this, unit);
+    this.body.validate();
   }
 }

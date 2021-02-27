@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.StringTokenizer;
 
-import soot.jimple.JimpleBody;
+import soot.Body;
 
 public class Filter
 {
@@ -40,7 +40,7 @@ public class Filter
     }
   }
 
-  public boolean matches(JimpleBody body)
+  public boolean matches(Body body)
   {
     String className = body.getMethod().getDeclaringClass().getName();
     if (this.classes.contains(className))
