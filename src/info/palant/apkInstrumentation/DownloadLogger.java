@@ -59,11 +59,11 @@ public class DownloadLogger extends BodyTransformer
 
     this.logRequestBodies = (config.getProperty("DownloadLogger.requestBodies") != null);
     if (this.logRequestBodies)
-       ClassInjector.injectClass(OUTPUT_STREAM_CLASS);
+      ClassInjector.injectClass(OUTPUT_STREAM_CLASS);
 
     this.logResponses = (config.getProperty("DownloadLogger.responses") != null);
     if (this.logResponses)
-       ClassInjector.injectClass(INPUT_STREAM_CLASS);
+      ClassInjector.injectClass(INPUT_STREAM_CLASS);
   }
 
   private void insertLogging(Body body, Unit insertAfter, String formatStr, Value[] args)
