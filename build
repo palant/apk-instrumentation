@@ -35,7 +35,7 @@ try:
 
     subprocess.check_call([
         javac, '-d', classdir,
-        '-Xlint:unchecked',
+        '-Xlint:unchecked,deprecation',
         '-sourcepath', '.',
         os.path.join('info', 'palant', 'apkInstrumentation', 'Main.java')
     ], cwd=source_dir, env={'CLASSPATH': soot})
@@ -45,7 +45,7 @@ try:
     subprocess.check_call([
         javac, '-d', classdir,
         '-source', '1.7', '-target', '1.7',
-        '-Xlint:unchecked',
+        '-Xlint:unchecked,deprecation',
         '-sourcepath', '.',
         os.path.join('info', 'palant', 'apkInstrumentation', 'LoggingInputStream.java'),
         os.path.join('info', 'palant', 'apkInstrumentation', 'LoggingOutputStream.java')

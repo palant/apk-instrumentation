@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import soot.Body;
 import soot.Local;
@@ -19,6 +21,7 @@ import soot.Scene;
 import soot.SootClass;
 import soot.SootMethod;
 import soot.Unit;
+import soot.Type;
 import soot.Value;
 import soot.BodyTransformer;
 import soot.jimple.AssignStmt;
@@ -32,6 +35,21 @@ public class DownloadLogger extends BodyTransformer
 {
   final static String OUTPUT_STREAM_CLASS = "info.palant.apkInstrumentation.LoggingOutputStream";
   final static String INPUT_STREAM_CLASS = "info.palant.apkInstrumentation.LoggingInputStream";
+  final static Map<String,Map<String,String>> loggedCalls = Map.ofEntries(
+    Map.entry("java.net.URL", Map.ofEntries(
+      Map.entry("openConnection", "Method {method:%s} opened URLConnection {result:%x} to URL {this:%s}")
+    )),
+    Map.entry("java.net.URLConnection", Map.ofEntries(
+      Map.entry("addRequestProperty(java.lang.String,java.lang.String)", "Method {method:%s} added request header to URLConnection {this:%x}: {arg0:%s}: {arg1:%s}"),
+      Map.entry("connect()", "Method {method:%s} called connect() on URLConnection {this:%x}"),
+      Map.entry("getContentLength()", "Method {method:%s} retrieved content length on URLConnection {this:%x} ({result:%i})"),
+      Map.entry("getContentType()", "Method {method:%s} retrieved content type on URLConnection {this:%x} ({result:%s})"),
+      Map.entry("getHeaderField(java.lang.String)", "Method {method:%s} retrieved header field {arg0:%s} on URLConnection {this:%x} ({result:%s})"),
+      Map.entry("getResponseCode()", "Method {method:%s} retrieved response code on URLConnection {this:%x} ({result:%i})"),
+      Map.entry("setRequestMethod(java.lang.String)", "Method {method:%s} set request method on URLConnection {this:%x} to {arg0:%s}"),
+      Map.entry("setRequestProperty(java.lang.String,java.lang.String)", "Method {method:%s} set request header for URLConnection {this:%x}: {arg0:%s}: {arg1:%s}")
+    ))
+  );
   private final Filter filter;
   private String tag;
   private boolean logRequestBodies;
@@ -66,24 +84,115 @@ public class DownloadLogger extends BodyTransformer
       ClassInjector.injectClass(INPUT_STREAM_CLASS);
   }
 
-  private void insertLogging(Body body, Unit insertAfter, String formatStr, Value[] args)
+  private void logCall(Body body, Unit insertAfter, InvokeExpr invocation, Value thisRef, Value result)
   {
-    UnitSequence units = new UnitSequence(body);
-
-    // %x is the identity parameter, call getIdentity() for the corresponding value
-    int index = -1;
-    for (int i = 0; i < args.length; i++)
+    Map<String,String> formatStrings = null;
+    SootMethod method = invocation.getMethod();
+    SootClass cls = method.getDeclaringClass();
+    while (true)
     {
-      index = formatStr.indexOf('%', index + 1);
-      if (index < 0)
+      formatStrings = loggedCalls.get(cls.getName());
+      if (formatStrings != null)
         break;
-      if (index + 1 < formatStr.length() && formatStr.charAt(index + 1) == 'x' && i < args.length)
-        args[i] = (args[i] == null ? IntConstant.v(0) : units.getIdentity(args[i]));
+      if (!cls.hasSuperclass())
+        return;
+      cls = cls.getSuperclass();
     }
 
+    String formatString = formatStrings.get(method.getName());
+    if (formatString == null)
+    {
+      String signature = method.getName() + "(";
+      boolean first = true;
+      for (Type type: method.getParameterTypes())
+      {
+        if (first)
+          first = false;
+        else
+          signature += ",";
+        signature += type.toString();
+      }
+      signature += ")";
+      formatString = formatStrings.get(signature);
+    }
+    if (formatString == null)
+      return;
+
+    UnitSequence units = new UnitSequence(body);
+    Matcher matcher = Pattern.compile("\\{(.*?):(%.*?)\\}").matcher(formatString);
+    List<Value> args = new ArrayList<Value>();
+    String cleanFormatString = "";
+    int prevEnd = 0;
+    while (matcher.find())
+    {
+      cleanFormatString += formatString.substring(prevEnd, matcher.start());
+      cleanFormatString += matcher.group(2);
+      prevEnd = matcher.end();
+
+      Value arg;
+      if (matcher.group(1).equals("method"))
+        arg = StringConstant.v(body.getMethod().getSignature());
+      else if (matcher.group(1).equals("this"))
+        arg = thisRef;
+      else if (matcher.group(1).equals("result"))
+        arg = result;
+      else if (matcher.group(1).startsWith("arg"))
+        arg = invocation.getArg(Integer.parseInt(matcher.group(1).substring(3)));
+      else
+        throw new RuntimeException("Unknown parameter name " + matcher.group(1));
+
+      if (matcher.group(2).equals("%x"))
+        arg = (arg == null ? IntConstant.v(0) : units.getIdentity(arg));
+      args.add(arg);
+    }
     units.log(this.tag, units.format(
-      formatStr,
-      args
+      cleanFormatString,
+      args.toArray(new Value[0])
+    ));
+    units.insertAfter(insertAfter);
+  }
+
+  private void wrapResult(Body body, Unit insertAfter, InvokeExpr invocation, Value thisRef, Value result)
+  {
+    SootMethod method = invocation.getMethod();
+    SootClass cls = method.getDeclaringClass();
+    while (true)
+    {
+      if (cls.getName().equals("java.net.URLConnection"))
+        break;
+      if (!cls.hasSuperclass())
+        return;
+      cls = cls.getSuperclass();
+    }
+
+    String logClass;
+    String formatString;
+    if (method.getName().equals("getInputStream"))
+    {
+      if (!this.logResponses)
+        return;
+      logClass = INPUT_STREAM_CLASS;
+      formatString = "Received data from URLConnection %x: \"%%s\"";
+    }
+    else if (method.getName().equals("getOutputStream"))
+    {
+      if (!this.logRequestBodies)
+        return;
+      logClass = OUTPUT_STREAM_CLASS;
+      formatString = "Sent data to URLConnection %x: \"%%s\"";
+    }
+    else
+      return;
+
+    UnitSequence units = new UnitSequence(body);
+    units.assign(result, units.newObject(
+      logClass,
+      result,
+      StringConstant.v(this.tag),
+      units.format(
+        formatString,
+        units.getIdentity(thisRef)
+      )
     ));
     units.insertAfter(insertAfter);
   }
@@ -96,9 +205,6 @@ public class DownloadLogger extends BodyTransformer
 
     for (Unit unit: body.getUnits().toArray(new Unit[0]))
     {
-      if (!(unit instanceof AssignStmt))
-        continue;
-
       InvokeExpr invocation;
       if (unit instanceof AssignStmt && ((AssignStmt)unit).getRightOp() instanceof InvokeExpr)
         invocation = (InvokeExpr)((AssignStmt)unit).getRightOp();
@@ -111,141 +217,11 @@ public class DownloadLogger extends BodyTransformer
         continue;
 
       SootMethod method = invocation.getMethod();
-      String className = method.getDeclaringClass().getName();
       final Value thisRef = ((InstanceInvokeExpr)invocation).getBase();
       final Value result = (unit instanceof AssignStmt ? ((AssignStmt)unit).getLeftOp() : null);
-      if (className.equals("java.net.URL") && method.getName().equals("openConnection"))
-      {
-        this.insertLogging(
-          body, unit, "Method %s opened URLConnection %x to URL %s",
-          new Value[] {
-            StringConstant.v(body.getMethod().getSignature()),
-            result,
-            thisRef
-          }
-        );
-      }
-      else if (className.equals("java.net.URLConnection") || className.equals("java.net.HttpURLConnection") || className.equals("javax.net.ssl.HttpsURLConnection"))
-      {
-        switch (method.getSubSignature())
-        {
-          case "void addRequestProperty(java.lang.String,java.lang.String)":
-            this.insertLogging(
-              body, unit, "Method %s added request property to URLConnection %x: %s=%s",
-              new Value[] {
-                StringConstant.v(body.getMethod().getSignature()),
-                thisRef,
-                invocation.getArg(0),
-                invocation.getArg(1)
-              }
-            );
-            break;
-          case "void connect()":
-            this.insertLogging(
-              body, unit, "Method %s called connect() on URLConnection %x",
-              new Value[] {
-                StringConstant.v(body.getMethod().getSignature()),
-                thisRef
-              }
-            );
-            break;
-          case "int getContentLength()":
-            this.insertLogging(
-              body, unit, "Method %s retrieved content length on URLConnection %x (%i)",
-              new Value[] {
-                StringConstant.v(body.getMethod().getSignature()),
-                thisRef,
-                result
-              }
-            );
-            break;
-          case "java.io.InputStream getInputStream()":
-          {
-            if (result == null || !this.logResponses)
-              break;
-
-            UnitSequence units = new UnitSequence(body);
-
-            Local formatStr = units.format(
-              "Received data from URLConnection %x: \"%%s\"",
-              units.getIdentity(thisRef)
-            );
-
-            units.assign(result, units.newObject(
-              INPUT_STREAM_CLASS,
-              result,
-              StringConstant.v(this.tag),
-              formatStr
-            ));
-
-            units.insertAfter(unit);
-            break;
-          }
-          case "java.lang.String getContentType()":
-            this.insertLogging(
-              body, unit, "Method %s retrieved content type on URLConnection %x (%s)",
-              new Value[] {
-                StringConstant.v(body.getMethod().getSignature()),
-                thisRef,
-                result
-              }
-            );
-            break;
-          case "java.io.OutputStream getOutputStream()":
-          {
-            if (result == null || !this.logRequestBodies)
-              break;
-
-            UnitSequence units = new UnitSequence(body);
-
-            Local formatStr = units.format(
-              "Sent data to URLConnection %x: \"%%s\"",
-              units.getIdentity(thisRef)
-            );
-
-            units.assign(result, units.newObject(
-              OUTPUT_STREAM_CLASS,
-              result,
-              StringConstant.v(this.tag),
-              formatStr
-            ));
-
-            units.insertAfter(unit);
-            break;
-          }
-          case "java.lang.String getHeaderField(java.lang.String)":
-            this.insertLogging(
-              body, unit, "Method %s retrieved header field %s on URLConnection %x (%s)",
-              new Value[] {
-                StringConstant.v(body.getMethod().getSignature()),
-                invocation.getArg(0),
-                thisRef,
-                result
-              }
-            );
-            break;
-          case "int getResponseCode()":
-            this.insertLogging(
-              body, unit, "Method %s retrieved response code on URLConnection %x (%i)",
-              new Value[] {
-                StringConstant.v(body.getMethod().getSignature()),
-                thisRef,
-                result
-              }
-            );
-            break;
-          case "void setRequestMethod(java.lang.String)":
-            this.insertLogging(
-              body, unit, "Method %s set request method on URLConnection %x to %s",
-              new Value[] {
-                StringConstant.v(body.getMethod().getSignature()),
-                thisRef,
-                invocation.getArg(0)
-              }
-            );
-            break;
-        }
-      }
+      this.logCall(body, unit, invocation, thisRef, result);
+      if (result != null)
+        this.wrapResult(body, unit, invocation, thisRef, result);
     }
   }
 }
