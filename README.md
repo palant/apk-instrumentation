@@ -44,7 +44,7 @@ Configuration options:
 
 ## DownloadLogger component
 
-This component will `URLConnection` interactions.
+This component will log `URLConnection` interactions.
 
 Configuration options:
 
