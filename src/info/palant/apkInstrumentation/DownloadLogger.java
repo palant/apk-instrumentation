@@ -158,7 +158,7 @@ public class DownloadLogger extends BodyTransformer
     SootClass cls = method.getDeclaringClass();
     while (true)
     {
-      if (cls.getName().equals("java.net.URLConnection"))
+      if (cls.getName().equals("java.net.URLConnection") || cls.getName().equals("java.net.URL"))
         break;
       if (!cls.hasSuperclass())
         return;
@@ -181,6 +181,13 @@ public class DownloadLogger extends BodyTransformer
       logClass = OUTPUT_STREAM_CLASS;
       formatString = "Sent data to URLConnection %x: \"%%s\"";
     }
+    else if (method.getName().equals("openStream"))
+    {
+      if (!this.logResponses)
+        return;
+      logClass = INPUT_STREAM_CLASS;
+      formatString = "Received data from URL %s: \"%%s\"";
+    }
     else
       return;
 
@@ -191,7 +198,7 @@ public class DownloadLogger extends BodyTransformer
       StringConstant.v(this.tag),
       units.format(
         formatString,
-        units.getIdentity(thisRef)
+        formatString.indexOf("%x") >= 0 ? units.getIdentity(thisRef) : thisRef
       )
     ));
     units.insertAfter(insertAfter);
