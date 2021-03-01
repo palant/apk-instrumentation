@@ -32,6 +32,39 @@ Each component has a `filter` option allowing to restrict its functionality. Itâ
 * `com.example.test.Main`: includes all methods of a specific class
 * `com.example.test.Main.dump()`: includes all methods with a particular name inside a class (empty parentheses at the end are mandatory)
 
+## Extended format strings
+
+Some components will allow specifying extended format strings for data to be logged. These use the usual [Java format specifiers](https://docs.oracle.com/javase/7/docs/api/java/util/Formatter.html#syntax) like `%s` or `%i` but require specifying the input as well, e.g. `{this:%s}` (format `this` value as a string) or `{arg2:%i}` (format second parameter as integer). The following input specifiers are possible:
+
+* `method`: The signature of the calling method
+* `result`: Call result if available
+* `this`: Instance reference
+* `argNN`: Argument value where NN is the argumentâ€™s zero-based position
+
+In addition, the format specifier `%x` is treated specially: `System.identityHashCode()` will be called on the corresponding input and the result hex-formatted.
+
+## CallLogger component
+
+This component will add logging code after calls to specified methods. See `config.properties.downloads` for a configuration example logging `URLConnection` interactions.
+
+Configuration options:
+
+* `CallLogger.enabled`: add to enable this component
+* `CallLogger.filter`: (optional) restricts functionality to a set of classes or methods (see Filters section above)
+* `CallLogger.tag`: (optional) log tag to be used (default is `CallLogger`)
+* `CallLogger.<class>:<method>`: specifies a call to be logged. `<class>` has to be a full class name like `java.net.URL`. `<method>` can be either a method name like `openConnection` or a more specific method name along with parameter types like `getHeaderField(java.lang.String)`. The value is a format string (see Extended format strings section above).
+
+## StreamLogger component
+
+This component will wrap `InputStream` and `OutputStream` instances returned by specified methods to log data being sent or received. See `config.properties.downloads` for a configuration example logging streams returned by `URLConnection.getInputStream()` and `URLConnection.getOutputStream()`.
+
+Configuration options:
+
+* `StreamLogger.enabled`: add to enable this component
+* `StreamLogger.filter`: (optional) restricts functionality to a set of classes or methods (see Filters section above)
+* `StreamLogger.tag`: (optional) log tag to be used (default is `StreamLogger`)
+* `StreamLogger.<class>:<method>`: specifies a call returning a stream that should be wrapped. `<class>` has to be a full class name like `java.net.URLConnection`. `<method>` can be either a method name like `getInputStream` or a more specific method name along with parameter types like `getOutputStream(java.net.URL)`. The value is a format string that will be used as a prefix for logged data (see Extended format strings section above).
+
 ## MethodLogger component
 
 This component will add logging to the start of each method. In addition to the method signature, the parameter values will be logged.
@@ -41,18 +74,6 @@ Configuration options:
 * `MethodLogger.enabled`: add to enable this component
 * `MethodLogger.filter`: (optional) restricts functionality to a set of classes or methods (see Filters section above)
 * `MethodLogger.tag`: (optional) log tag to be used (default is `MethodLogger`)
-
-## DownloadLogger component
-
-This component will log `URLConnection` interactions.
-
-Configuration options:
-
-* `DownloadLogger.enabled`: add to enable this component
-* `DownloadLogger.filter`: (optional) restricts functionality to a set of classes or methods (see Filters section above)
-* `DownloadLogger.tag`: (optional) log tag to be used (default is `DownloadLogger`)
-* `DownloadLogger.requestBodies`: (optional) if present, data sent via the connection will be logged
-* `DownloadLogger.responses`: (optional) if present, data received via the connection will be logged
 
 ## AssignmentRemover component
 

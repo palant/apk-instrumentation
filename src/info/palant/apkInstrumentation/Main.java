@@ -25,6 +25,8 @@ import java.util.zip.ZipOutputStream;
 
 import soot.G;
 import soot.PackManager;
+import soot.Scene;
+import soot.SootClass;
 import soot.Transform;
 import soot.options.Options;
 
@@ -142,6 +144,16 @@ public class Main
     Options.v().set_output_format(Options.output_format_dex);
     Options.v().set_output_dir(tempDir);
     Options.v().set_validate(true);
+
+    // Load classes
+    Scene.v().addBasicClass("android.util.Log", SootClass.SIGNATURES);
+    Scene.v().addBasicClass("java.io.InputStream", SootClass.SIGNATURES);
+    Scene.v().addBasicClass("java.io.OutputStream", SootClass.SIGNATURES);
+    Scene.v().addBasicClass("java.lang.Object", SootClass.SIGNATURES);
+    Scene.v().addBasicClass("java.lang.String", SootClass.SIGNATURES);
+    Scene.v().addBasicClass("java.lang.StringBuilder", SootClass.SIGNATURES);
+    Scene.v().addBasicClass("java.lang.System", SootClass.SIGNATURES);
+    Scene.v().loadNecessaryClasses();
   }
 
   private static void addTransformers(Properties config)
@@ -157,9 +169,14 @@ public class Main
       PackManager.v().getPack("jtp").add(new Transform("jtp.AssignmentRemover", new AssignmentRemover(config)));
       hasTransformers = true;
     }
-    if (config.getProperty("DownloadLogger.enabled") != null)
+    if (config.getProperty("CallLogger.enabled") != null)
     {
-      PackManager.v().getPack("jtp").add(new Transform("jtp.DownloadLogger", new DownloadLogger(config)));
+      PackManager.v().getPack("jtp").add(new Transform("jtp.CallLogger", new CallLogger(config)));
+      hasTransformers = true;
+    }
+    if (config.getProperty("StreamLogger.enabled") != null)
+    {
+      PackManager.v().getPack("jtp").add(new Transform("jtp.StreamLogger", new StreamLogger(config)));
       hasTransformers = true;
     }
 

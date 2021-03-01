@@ -13,8 +13,6 @@ import java.util.Properties;
 import soot.Body;
 import soot.BodyTransformer;
 import soot.Local;
-import soot.Scene;
-import soot.SootClass;
 import soot.jimple.StringConstant;
 
 public class MethodLogger extends BodyTransformer
@@ -24,12 +22,6 @@ public class MethodLogger extends BodyTransformer
 
   public MethodLogger(Properties config)
   {
-    Scene.v().addBasicClass("android.util.Log", SootClass.SIGNATURES);
-    Scene.v().addBasicClass("java.lang.Object", SootClass.SIGNATURES);
-    Scene.v().addBasicClass("java.lang.String", SootClass.SIGNATURES);
-    Scene.v().addBasicClass("java.lang.StringBuilder", SootClass.SIGNATURES);
-    Scene.v().loadNecessaryClasses();
-
     String filterSpec = config.getProperty("MethodLogger.filter");
     if (filterSpec != null)
       this.filter = new Filter(filterSpec);
@@ -38,7 +30,7 @@ public class MethodLogger extends BodyTransformer
 
     this.tag = config.getProperty("MethodLogger.tag");
     if (tag == null)
-      tag = "MethodLogger";
+      this.tag = "MethodLogger";
   }
 
   @Override

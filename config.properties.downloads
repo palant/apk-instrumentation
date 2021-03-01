@@ -1,0 +1,21 @@
+sdk=/path/to/android/sdk
+input=game.apk
+output=game-instrumented.apk
+keystore=debug.jks
+keypass=123456
+
+CallLogger.enabled = true
+CallLogger.java.net.URL\:openConnection = URLConnection {result:%x}: opened for URL {this:%s} (method {method:%s})
+CallLogger.java.net.URLConnection\:addRequestProperty(java.lang.String,java.lang.String) = URLConnection {this:%x}: added request header  {arg0:%s}: {arg1:%s} (method {method:%s})
+CallLogger.java.net.URLConnection\:connect() = URLConnection {this:%x}: connected (method {method:%s})
+CallLogger.java.net.URLConnection\:getContentLength() = URLConnection {this:%x}: response content length is {result:%i} (method {method:%s})
+CallLogger.java.net.URLConnection\:getContentType() = URLConnection {this:%x}: response content type is {result:%s} (method {method:%s})
+CallLogger.java.net.URLConnection\:getHeaderField(java.lang.String) = URLConnection {this:%x}: header {arg0:%s} value is {result:%s} (method {method:%s})
+CallLogger.java.net.URLConnection\:setRequestProperty(java.lang.String,java.lang.String) = URLConnection {this:%x}: set request header {arg0:%s}: {arg1:%s} (method {method:%s})
+CallLogger.java.net.HttpURLConnection\:getResponseCode() = URLConnection {this:%x}: response code is {result:%i} (method {method:%s})
+CallLogger.java.net.HttpURLConnection\:setRequestMethod(java.lang.String) = URLConnection {this:%x}: request method set to {arg0:%s} (method {method:%s})
+
+StreamLogger.enabled = true
+StreamLogger.java.net.URL\:openStream = URL {this:%s} response (requested by method {method:%s})
+StreamLogger.java.net.URLConnection\:getInputStream = URLConnection {this:%x}: response (requested by method {method:%s})
+StreamLogger.java.net.URLConnection\:getOutputStream = URLConnection {this:%x}: request body (requested by method {method:%s})

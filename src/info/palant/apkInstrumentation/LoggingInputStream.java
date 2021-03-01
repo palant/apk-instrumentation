@@ -14,14 +14,14 @@ import java.lang.reflect.Method;
 public class LoggingInputStream extends FilterInputStream
 {
   private final String tag;
-  private final String format;
+  private final String prefix;
   private boolean reentrance = false;
 
-  public LoggingInputStream(InputStream in, String tag, String format)
+  public LoggingInputStream(InputStream in, String tag, String prefix)
   {
     super(in);
     this.tag = tag;
-    this.format = format;
+    this.prefix = prefix;
   }
 
   private String formatByte(byte b)
@@ -43,7 +43,7 @@ public class LoggingInputStream extends FilterInputStream
     {
       Class<?> logClass = Class.forName("android.util.Log");
       Method logMethod = logClass.getDeclaredMethod("i", String.class, String.class);
-      logMethod.invoke(null, this.tag, String.format(this.format, data));
+      logMethod.invoke(null, this.tag, String.format("%s: received data \"%s\"", this.prefix, data));
     }
     catch (Exception e)
     {

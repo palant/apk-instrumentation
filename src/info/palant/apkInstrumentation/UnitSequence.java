@@ -6,9 +6,11 @@
 
 package info.palant.apkInstrumentation;
 
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import soot.ArrayType;
 import soot.Body;
@@ -222,6 +224,41 @@ public class UnitSequence extends ArrayList<Unit>
     Local argsArray = this.arrayLiteral(RefType.v("java.lang.Object"), args);
 
     return this.call(RefType.v("java.lang.String"), "format", RefType.v("java.lang.String"), formatStr, argsArray);
+  }
+
+  public Local extendedFormat(String formatString, Value result, Value thisRef, List<Value> argValues)
+  {
+    Matcher matcher = Pattern.compile("\\{(.*?):(%.*?)\\}").matcher(formatString);
+    List<Value> args = new ArrayList<Value>();
+    String cleanFormatString = "";
+    int prevEnd = 0;
+    while (matcher.find())
+    {
+      cleanFormatString += formatString.substring(prevEnd, matcher.start());
+      cleanFormatString += matcher.group(2);
+      prevEnd = matcher.end();
+
+      Value arg;
+      if (matcher.group(1).equals("method"))
+        arg = StringConstant.v(this.body.getMethod().getSignature());
+      else if (matcher.group(1).equals("result"))
+        arg = result;
+      else if (matcher.group(1).equals("this"))
+        arg = thisRef;
+      else if (matcher.group(1).startsWith("arg"))
+        arg = argValues.get(Integer.parseInt(matcher.group(1).substring(3)));
+      else
+        throw new RuntimeException("Unknown parameter name " + matcher.group(1));
+
+      if (matcher.group(2).equals("%x"))
+        arg = (arg == null ? IntConstant.v(0) : this.getIdentity(arg));
+      args.add(arg);
+    }
+    cleanFormatString += formatString.substring(prevEnd);
+    return this.format(
+      cleanFormatString,
+      args.toArray(new Value[0])
+    );
   }
 
   public Local getIdentity(Value obj)
