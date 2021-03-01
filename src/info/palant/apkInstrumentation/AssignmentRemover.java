@@ -15,7 +15,7 @@ import soot.jimple.AssignStmt;
 
 public class AssignmentRemover extends BodyTransformer
 {
-  private Filter filter;
+  private MethodConfig filter;
   private String type;
 
   public AssignmentRemover(Properties config)
@@ -26,7 +26,7 @@ public class AssignmentRemover extends BodyTransformer
 
     String filterSpec = config.getProperty("AssignmentRemover.filter");
     if (filterSpec != null)
-      this.filter = new Filter(filterSpec);
+      this.filter = new MethodConfig(filterSpec, "");
     else
       this.filter = null;
   }
@@ -34,7 +34,7 @@ public class AssignmentRemover extends BodyTransformer
   @Override
   protected void internalTransform(Body body, String phaseName, Map<String, String> options)
   {
-    if (this.filter != null && !this.filter.matches(body))
+    if (this.filter != null && this.filter.get(body.getMethod()) == null)
       return;
 
     body.getUnits().removeIf(unit -> {

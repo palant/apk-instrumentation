@@ -4,12 +4,12 @@ output=game-instrumented.apk
 keystore=debug.jks
 keypass=123456
 
-MethodLogger.enabled=true
-MethodLogger.filter=com.example.funnygame.* \
-    com.example.util.Util \
-    com.example.util.Downloader.download()
-MethodLogger.tag=MethodEntered
+MethodLogger.enabled = true
+MethodLogger.filter = com.example.funnygame.* \
+    com.example.util.Util:* \
+    com.example.util.Downloader:download()
+MethodLogger.tag = MethodEntered
 
-AssignmentRemover.enabled=true
-AssignmentRemover.filter=com.example.funnygame.SomeClass.<clinit>()
-AssignmentRemover.type=com.example.funnygame.SomeInterface
+AssignmentRemover.enabled = true
+AssignmentRemover.filter = com.example.funnygame.SomeClass:<clinit>()
+AssignmentRemover.type = com.example.funnygame.SomeInterface

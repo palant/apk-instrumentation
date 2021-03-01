@@ -24,13 +24,13 @@ The following configuration options are independent of the components enabled:
 * `keystore`: (optional) path to the key store containing the signing key
 * `keypass`: (optional) password protecting the key store
 
-## Filters
+## Method filters
 
-Each component has a `filter` option allowing to restrict its functionality. It’s a space-separated list, entries can have the following format:
+Some configuration options use method filters determining which methods are included. These are space-separated lists, entries can have the following format:
 
 * `com.example.test.*`: includes all classes with names matching a particular prefix
-* `com.example.test.Main`: includes all methods of a specific class
-* `com.example.test.Main.dump()`: includes all methods with a particular name inside a class (empty parentheses at the end are mandatory)
+* `com.example.test.Main:*`: includes all methods of a specific class
+* `com.example.test.Main:dump(java.lang.String,int)`: includes only the method with the specified signature
 
 ## Extended format strings
 
@@ -50,7 +50,7 @@ This component will add logging code after calls to specified methods. See `conf
 Configuration options:
 
 * `CallLogger.enabled`: add to enable this component
-* `CallLogger.filter`: (optional) restricts functionality to a set of classes or methods (see Filters section above)
+* `CallLogger.filter`: (optional) restricts functionality to a set of methods, for value format see Method filters section above
 * `CallLogger.tag`: (optional) log tag to be used (default is `CallLogger`)
 * `CallLogger.<class>:<method>`: specifies a call to be logged. `<class>` has to be a full class name like `java.net.URL`. `<method>` can be either a method name like `openConnection` or a more specific method name along with parameter types like `getHeaderField(java.lang.String)`. The value is a format string (see Extended format strings section above).
 
@@ -61,9 +61,9 @@ This component will wrap `InputStream` and `OutputStream` instances returned by 
 Configuration options:
 
 * `StreamLogger.enabled`: add to enable this component
-* `StreamLogger.filter`: (optional) restricts functionality to a set of classes or methods (see Filters section above)
+* `StreamLogger.filter`: (optional) restricts functionality to a set of methods, for value format see Method filters section above
 * `StreamLogger.tag`: (optional) log tag to be used (default is `StreamLogger`)
-* `StreamLogger.<class>:<method>`: specifies a call returning a stream that should be wrapped. `<class>` has to be a full class name like `java.net.URLConnection`. `<method>` can be either a method name like `getInputStream` or a more specific method name along with parameter types like `getOutputStream(java.net.URL)`. The value is a format string that will be used as a prefix for logged data (see Extended format strings section above).
+* `StreamLogger.<method filter>`: specifies a call returning a stream that should be wrapped. `<method filter>` is a method specification as outlined in the Method filters section above. Note that `.properties` format requires colons to be prefixed with a backslash: `\:`. The value is a format string that will be used as a prefix for logged data (see Extended format strings section above).
 
 ## MethodLogger component
 
@@ -72,7 +72,7 @@ This component will add logging to the start of each method. In addition to the 
 Configuration options:
 
 * `MethodLogger.enabled`: add to enable this component
-* `MethodLogger.filter`: (optional) restricts functionality to a set of classes or methods (see Filters section above)
+* `MethodLogger.filter`: (optional) restricts functionality to a set of methods, for value format see Method filters section above
 * `MethodLogger.tag`: (optional) log tag to be used (default is `MethodLogger`)
 
 ## AssignmentRemover component
@@ -82,5 +82,5 @@ This component will remove any assignments with the specified result type. Note 
 Configuration options:
 
 * `AssignmentRemover.enabled`: add to enable this component
-* `AssignmentRemover.filter`: (optional) restricts functionality to a set of classes or methods (see Filters section above)
+* `AssignmentRemover.filter`: (optional) restricts functionality to a set of methods, for value format see Method filters section above
 * `AssignmentRemover.type`: the result type identifying the assignment to be removed

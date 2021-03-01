@@ -17,14 +17,14 @@ import soot.jimple.StringConstant;
 
 public class MethodLogger extends BodyTransformer
 {
-  private final Filter filter;
+  private final MethodConfig filter;
   private String tag;
 
   public MethodLogger(Properties config)
   {
     String filterSpec = config.getProperty("MethodLogger.filter");
     if (filterSpec != null)
-      this.filter = new Filter(filterSpec);
+      this.filter = new MethodConfig(filterSpec, "");
     else
       this.filter = null;
 
@@ -36,7 +36,7 @@ public class MethodLogger extends BodyTransformer
   @Override
   protected void internalTransform(Body body, String phaseName, Map<String, String> options)
   {
-    if (this.filter != null && !this.filter.matches(body))
+    if (this.filter != null && this.filter.get(body.getMethod()) == null)
       return;
 
     UnitSequence units = new UnitSequence(body);
