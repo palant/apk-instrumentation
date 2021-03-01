@@ -6,19 +6,19 @@
 
 package info.palant.apkInstrumentation;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import soot.Body;
 import soot.BodyTransformer;
-import soot.Local;
-import soot.jimple.StringConstant;
+import soot.Value;
 
 public class MethodLogger extends BodyTransformer
 {
   private final MethodConfig filter;
   private String tag;
+  private String format;
 
   public MethodLogger(Properties config)
   {
@@ -31,6 +31,10 @@ public class MethodLogger extends BodyTransformer
     this.tag = config.getProperty("MethodLogger.tag");
     if (tag == null)
       this.tag = "MethodLogger";
+
+    this.format = config.getProperty("MethodLogger.format");
+    if (this.format == null)
+      this.format = "Entered method {method:%s} ({args:%s})";
   }
 
   @Override
@@ -40,31 +44,12 @@ public class MethodLogger extends BodyTransformer
       return;
 
     UnitSequence units = new UnitSequence(body);
-
-    List<Local> parameters = body.getParameterLocals();
-    if (parameters.size() > 0)
-    {
-      Local message = units.newObject(
-        "java.lang.StringBuilder",
-        StringConstant.v("Entered method " + body.getMethod().getSignature() + " with parameters: ")
-      );
-
-      boolean first = true;
-      for (Local parameter: parameters)
-      {
-        if (first)
-          first = false;
-        else
-          units.call(message, "append", StringConstant.v(", "));
-
-        units.call(message, "append", units.stringify(parameter));
-      }
-
-      units.log(this.tag, units.stringify(message));
-    }
-    else
-      units.log(this.tag, StringConstant.v("Entered method " + body.getMethod().getSignature()));
-
+    units.log(this.tag, units.extendedFormat(
+      this.format,
+      null,
+      body.getThisLocal(),
+      body.getParameterLocals().stream().map(local -> (Value)local).collect(Collectors.toList())
+    ));
     units.insertBefore();
   }
 }

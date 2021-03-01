@@ -245,6 +245,30 @@ public class UnitSequence extends ArrayList<Unit>
         arg = result;
       else if (matcher.group(1).equals("this"))
         arg = thisRef;
+      else if (matcher.group(1).equals("args"))
+      {
+        if (argValues.size() == 0)
+          arg = StringConstant.v("");
+        else if (argValues.size() == 1)
+          arg = this.stringify(argValues.get(0));
+        else
+        {
+          Local builder = this.newObject("java.lang.StringBuilder");
+
+          boolean first = true;
+          for (Value argValue: argValues)
+          {
+            if (first)
+              first = false;
+            else
+              this.call(builder, "append", StringConstant.v(", "));
+
+            this.call(builder, "append", this.stringify(argValue));
+          }
+
+          arg = this.stringify(builder);
+        }
+      }
       else if (matcher.group(1).startsWith("arg"))
         arg = argValues.get(Integer.parseInt(matcher.group(1).substring(3)));
       else

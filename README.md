@@ -40,6 +40,7 @@ Some components will allow specifying extended format strings for data to be log
 * `result`: Call result if available
 * `this`: Instance reference
 * `argNN`: Argument value where NN is the argument’s zero-based position
+* `args`: Comma-separated list of all arguments (stringified)
 
 In addition, the format specifier `%x` is treated specially: `System.identityHashCode()` will be called on the corresponding input and the result hex-formatted.
 
@@ -74,6 +75,7 @@ Configuration options:
 * `MethodLogger.enabled`: add to enable this component
 * `MethodLogger.filter`: (optional) restricts functionality to a set of methods, for value format see Method filters section above
 * `MethodLogger.tag`: (optional) log tag to be used (default is `MethodLogger`)
+* `MethodLogger.format`: (optional) extended format string to be used, see Extended format strings section above (default is `Entered method {method:%s} ({args:%s})`)
 
 ## AssignmentRemover component
 
