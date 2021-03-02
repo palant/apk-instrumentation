@@ -29,6 +29,7 @@ import soot.jimple.IntConstant;
 import soot.jimple.Jimple;
 import soot.jimple.JimpleBody;
 import soot.jimple.NullConstant;
+import soot.jimple.Stmt;
 import soot.jimple.StringConstant;
 
 public class UnitSequence extends ArrayList<Unit>
@@ -295,7 +296,14 @@ public class UnitSequence extends ArrayList<Unit>
 
   public void insertBefore()
   {
-    this.insertBefore(((JimpleBody)this.body).getFirstNonIdentityStmt());
+    Stmt unit = ((JimpleBody)this.body).getFirstNonIdentityStmt();
+    if (this.body.getMethod().getName().equals("<init>") && unit.containsInvokeExpr() && unit.getInvokeExpr().getMethod().getName().equals("<init>"))
+    {
+      // This is a super() constructor call, don't insert before it.
+      this.insertAfter(unit);
+    }
+    else
+      this.insertBefore(unit);
   }
 
   public void insertBefore(Unit unit)
