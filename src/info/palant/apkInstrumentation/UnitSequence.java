@@ -19,6 +19,7 @@ import soot.Local;
 import soot.PrimType;
 import soot.RefType;
 import soot.Scene;
+import soot.SootClass;
 import soot.SootMethod;
 import soot.Type;
 import soot.Unit;
@@ -287,8 +288,9 @@ public class UnitSequence extends ArrayList<Unit>
 
   public Local getIdentity(Value obj)
   {
-    obj = this.cast(obj, RefType.v("java.lang.Object"));
-    return this.call(RefType.v("java.lang.System"), "identityHashCode", IntType.v(), obj);
+    SootClass cls = RefType.v("java.lang.System").getSootClass();
+    SootMethod method = cls.getMethod("identityHashCode", Collections.singletonList(RefType.v("java.lang.Object")));
+    return this.call(method, IntType.v(), obj);
   }
 
   public void insertBefore()
