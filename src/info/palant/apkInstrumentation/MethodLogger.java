@@ -16,36 +16,28 @@ import soot.Value;
 
 public class MethodLogger extends BodyTransformer
 {
-  private final MethodConfig filter;
   private String tag;
-  private String format;
+  private MethodConfig methodConfig;
 
   public MethodLogger(Properties config)
   {
-    String filterSpec = config.getProperty("MethodLogger.filter");
-    if (filterSpec != null)
-      this.filter = new MethodConfig(filterSpec, "");
-    else
-      this.filter = null;
-
     this.tag = config.getProperty("MethodLogger.tag");
     if (tag == null)
       this.tag = "MethodLogger";
 
-    this.format = config.getProperty("MethodLogger.format");
-    if (this.format == null)
-      this.format = "Entered method {method:%s} ({args:%s})";
+    this.methodConfig = new MethodConfig(config, "MethodLogger.");
   }
 
   @Override
   protected void internalTransform(Body body, String phaseName, Map<String, String> options)
   {
-    if (this.filter != null && this.filter.get(body.getMethod()) == null)
+    String formatString = this.methodConfig.get(body.getMethod());
+    if (formatString == null)
       return;
 
     UnitSequence units = new UnitSequence(body);
     units.log(this.tag, units.extendedFormat(
-      this.format,
+      formatString,
       null,
       body.getThisLocal(),
       body.getParameterLocals().stream().map(local -> (Value)local).collect(Collectors.toList())

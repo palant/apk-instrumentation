@@ -53,7 +53,7 @@ Configuration options:
 * `CallLogger.enabled`: add to enable this component
 * `CallLogger.filter`: (optional) restricts functionality to a set of methods, for value format see Method filters section above
 * `CallLogger.tag`: (optional) log tag to be used (default is `CallLogger`)
-* `CallLogger.<class>:<method>`: specifies a call to be logged. `<class>` has to be a full class name like `java.net.URL`. `<method>` can be either a method name like `openConnection` or a more specific method name along with parameter types like `getHeaderField(java.lang.String)`. The value is a format string (see Extended format strings section above).
+* `CallLogger.<method filter>`: specifies that calls to the specified method should be logged. `<method filter>` is a method specification as outlined in the Method filters section above. Note that `.properties` format requires colons to be prefixed with a backslash: `\:`. The value is a format string (see Extended format strings section above).
 
 ## StreamLogger component
 
@@ -68,14 +68,13 @@ Configuration options:
 
 ## MethodLogger component
 
-This component will add logging to the start of each method. In addition to the method signature, the parameter values will be logged.
+This component will add logging to the start of a method. This might be more efficient than `CallLogger` for methods called from many places, and it will log even calls resulting in an exception. The disadvantage is that the method’s return value cannot be logged as it isn’t known at this stage.
 
 Configuration options:
 
 * `MethodLogger.enabled`: add to enable this component
-* `MethodLogger.filter`: (optional) restricts functionality to a set of methods, for value format see Method filters section above
 * `MethodLogger.tag`: (optional) log tag to be used (default is `MethodLogger`)
-* `MethodLogger.format`: (optional) extended format string to be used, see Extended format strings section above (default is `Entered method {method:%s} ({args:%s})`)
+* `MethodLogger.<method filter>`: specifies a method that should be logged. `<method filter>` is a method specification as outlined in the Method filters section above. Note that `.properties` format requires colons to be prefixed with a backslash: `\:`. The value is a format string like `Entered method {method:%s} ({args:%s})` (see Extended format strings section above).
 
 ## AssignmentRemover component
 

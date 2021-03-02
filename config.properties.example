@@ -5,10 +5,9 @@ keystore=debug.jks
 keypass=123456
 
 MethodLogger.enabled = true
-MethodLogger.filter = com.example.funnygame.* \
-    com.example.util.Util:* \
-    com.example.util.Downloader:download()
 MethodLogger.tag = MethodEntered
+MethodLogger.com.example.funnygame.* = Entered method {method:%s} ({args:%s})
+MethodLogger.com.example.util.Downloader\:download() = Download {this:%x} started
 
 AssignmentRemover.enabled = true
 AssignmentRemover.filter = com.example.funnygame.SomeClass:<clinit>()
