@@ -172,6 +172,11 @@ public class Main
       PackManager.v().getPack("jtp").add(new Transform("jtp.AssignmentRemover", new AssignmentRemover(config)));
       hasTransformers = true;
     }
+    if (config.getProperty("CallRemover.enabled") != null)
+    {
+      PackManager.v().getPack("jtp").add(new Transform("jtp.CallRemover", new CallRemover(config)));
+      hasTransformers = true;
+    }
     if (config.getProperty("CallLogger.enabled") != null)
     {
       PackManager.v().getPack("jtp").add(new Transform("jtp.CallLogger", new CallLogger(config)));

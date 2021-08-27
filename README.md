@@ -86,3 +86,13 @@ Configuration options:
 * `AssignmentRemover.enabled`: add to enable this component
 * `AssignmentRemover.filter`: (optional) restricts functionality to a set of methods, for value format see Method filters section above
 * `AssignmentRemover.type`: the result type identifying the assignment to be removed
+
+## CallRemover component
+
+This component will remove any calls to the specified method(s).
+
+Configuration options:
+
+* `CallRemover.enabled`: add to enable this component
+* `CallRemover.filter`: (optional) restricts functionality to a set of methods, for value format see Method filters section above
+* `CallRemover.method`: specifies the method(s) to be removed, for value format see Method filters section above
