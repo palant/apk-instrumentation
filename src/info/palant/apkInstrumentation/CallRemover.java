@@ -12,6 +12,8 @@ import java.util.Properties;
 import soot.Body;
 import soot.BodyTransformer;
 import soot.SootMethod;
+import soot.jimple.AssignStmt;
+import soot.jimple.NullConstant;
 
 public class CallRemover extends BodyTransformer
 {
@@ -40,7 +42,15 @@ public class CallRemover extends BodyTransformer
 
     body.getUnits().removeIf(unit -> {
       SootMethod method = UnitParser.getInvocationMethod(unit);
-      return method != null && this.methodConfig.get(method) != null;
+      if (method != null && this.methodConfig.get(method) != null)
+      {
+        AssignStmt assignment = UnitParser.getAssignment(unit);
+        if (assignment != null)
+          assignment.setRightOp(NullConstant.v());
+        else
+          return true;
+      }
+      return false;
     });
 
     body.validate();
