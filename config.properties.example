@@ -1,4 +1,5 @@
 sdk=/path/to/android/sdk
+platformVersion=30
 input=game.apk
 output=game-instrumented.apk
 keystore=debug.jks

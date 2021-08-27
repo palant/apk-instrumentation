@@ -38,16 +38,20 @@ public class LoggingOutputStream extends FilterOutputStream
 
   private void log(String data)
   {
-    // Calling indirectly to avoid dependency on android.jar during build
-    try
+    String output = String.format("%s: sent data \"%s\"", this.prefix, data);
+    for (int i = 0; i < output.length(); i += 4000)
     {
-      Class<?> logClass = Class.forName("android.util.Log");
-      Method logMethod = logClass.getDeclaredMethod("i", String.class, String.class);
-      logMethod.invoke(null, this.tag, String.format("%s: sent data \"%s\"", this.prefix, data));
-    }
-    catch (Exception e)
-    {
-      e.printStackTrace();
+      // Calling indirectly to avoid dependency on android.jar during build
+      try
+      {
+        Class<?> logClass = Class.forName("android.util.Log");
+        Method logMethod = logClass.getDeclaredMethod("i", String.class, String.class);
+        logMethod.invoke(null, this.tag, output.substring(i, Math.min(i + 4000, output.length())));
+      }
+      catch (Exception e)
+      {
+        e.printStackTrace();
+      }
     }
   }
 

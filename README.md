@@ -19,6 +19,7 @@ If no path to `config.properties` is given on the command line, the file is assu
 The following configuration options are independent of the components enabled:
 
 * `sdk`: (optional) directory where the Android SDK is installed. If omitted, `ANDROID_HOME` environment variable has to be set.
+* `platformVersion`: (optional) platform version to be loaded in Android SDK. If omitted, will be detected automatically.
 * `input`: path to the input APK file
 * `output`: path of the instrumented APK file to be written
 * `keystore`: (optional) path to the key store containing the signing key

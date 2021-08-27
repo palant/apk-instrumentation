@@ -75,11 +75,12 @@ public class Main
     if (keystore == null || keypass == null)
       System.err.println("Warning: keystore or keypass missing in the config file, package will not be signed.");
 
+    String platformVersion = config.getProperty("platformVersion");
     String platformsPath = sdkDir + File.separator + "platforms";
     File tempDir = Files.createTempDirectory(null).toFile();
     try
     {
-      transformAPK(config, input, output, tempDir.getPath(), platformsPath);
+      transformAPK(config, input, output, tempDir.getPath(), platformsPath, platformVersion);
     }
     finally
     {
@@ -123,7 +124,7 @@ public class Main
     }
   }
 
-  private static void setupSoot(String platformsPath, String tempDir, String inputFile)
+  private static void setupSoot(String platformsPath, String platformVersion, String tempDir, String inputFile)
   {
     // Reset all Soot settings
     G.reset();
@@ -134,6 +135,8 @@ public class Main
 
     // Read (APK Dex-to-Jimple) Options
     Options.v().set_android_jars(platformsPath);
+    if (platformVersion != null)
+      Options.v().set_android_api_version(Integer.parseInt(platformVersion));
     Options.v().set_src_prec(Options.src_prec_apk);
     Options.v().set_process_dir(Collections.singletonList(inputFile));
     Options.v().set_soot_classpath(getJARPath());
@@ -187,7 +190,7 @@ public class Main
     }
   }
 
-  private static void transformAPK(Properties config, String input, String output, String tempDir, String platformsPath) throws IOException
+  private static void transformAPK(Properties config, String input, String output, String tempDir, String platformsPath, String platformVersion) throws IOException
   {
     String dexInput = tempDir + File.separator + INPUT_FILE;
     String dexOutput = tempDir + File.separator + OUTPUT_FILE;
@@ -209,7 +212,7 @@ public class Main
           dexOutputStream.write(buffer, 0, numBytes);
         dexOutputStream.close();
 
-        setupSoot(platformsPath, tempDir, dexInput);
+        setupSoot(platformsPath, platformVersion, tempDir, dexInput);
         addTransformers(config);
         PackManager.v().runPacks();
         PackManager.v().writeOutput();
@@ -274,7 +277,7 @@ public class Main
       File tempFile =  new File(tempDir, "aligned.apk");
       runCommand(new String[] {
         zipalign.getPath(),
-        "-f", "4",
+        "-f", "-p", "4",
         output,
         tempFile.getPath()
       });

@@ -39,7 +39,7 @@ public class MethodLogger extends BodyTransformer
     units.log(this.tag, units.extendedFormat(
       formatString,
       null,
-      body.getThisLocal(),
+      body.getMethod().isStatic() ? null : body.getThisLocal(),
       body.getParameterLocals().stream().map(local -> (Value)local).collect(Collectors.toList())
     ));
     units.insertBefore();
