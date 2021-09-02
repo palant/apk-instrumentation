@@ -37,7 +37,34 @@ public class Main
 
   public static void main(String[] args) throws IOException
   {
-    String configPath = (args.length >= 1 ? args[0] : "config.properties");
+    String action = "rewrite";
+    String configPath = "config.properties";
+    for (int i = 0; i < args.length; i++)
+    {
+      if (args[i].startsWith("-"))
+      {
+        if (args[i].equals("-c") || args[i].equals("--config"))
+        {
+          if (i + 1 >= args.length)
+          {
+            System.err.println("Configuration file path has to follow --config option.");
+            System.exit(-1);
+          }
+          configPath = args[++i];
+        }
+        else
+        {
+          System.err.println("Unsupported option: " + args[i]);
+          System.exit(-2);
+        }
+      }
+      else
+      {
+        action = args[i];
+        break;
+      }
+    }
+
     Properties config = readConfig(configPath);
     if (config == null)
     {
@@ -63,34 +90,48 @@ public class Main
       System.exit(3);
     }
 
-    String output = config.getProperty("output");
+    String outputOption = action.equals("rewrite") ? "output" : "decompileDir";
+    String output = config.getProperty(outputOption);
     if (output == null)
     {
-      System.err.println("Please add output option to config file.");
+      System.err.println("Please add " + outputOption + " option to config file.");
       System.exit(4);
     }
 
     String keystore = config.getProperty("keystore");
     String keypass = config.getProperty("keypass");
-    if (keystore == null || keypass == null)
-      System.err.println("Warning: keystore or keypass missing in the config file, package will not be signed.");
 
     String platformVersion = config.getProperty("platformVersion");
     String platformsPath = sdkDir + File.separator + "platforms";
-    File tempDir = Files.createTempDirectory(null).toFile();
-    try
+    if (action.equals("rewrite"))
     {
-      transformAPK(config, input, output, tempDir.getPath(), platformsPath, platformVersion);
-    }
-    finally
-    {
-      for (String entry: tempDir.list())
-        new File(tempDir, entry).delete();
-      tempDir.delete();
-    }
+      if (keystore == null || keypass == null)
+        System.err.println("Warning: keystore or keypass missing in the config file, package will not be signed.");
 
-    if (keystore != null && keypass != null)
-      signAPK(sdkDir, keystore, keypass, output);
+      File tempDir = Files.createTempDirectory(null).toFile();
+      try
+      {
+        transformAPK(config, input, output, tempDir.getPath(), platformsPath, platformVersion);
+      }
+      finally
+      {
+        for (String entry: tempDir.list())
+          new File(tempDir, entry).delete();
+        tempDir.delete();
+      }
+
+      if (keystore != null && keypass != null)
+        signAPK(sdkDir, keystore, keypass, output);
+    }
+    else if (action.equals("decompile"))
+    {
+      decompileAPK(input, output, platformsPath, platformVersion);
+    }
+    else
+    {
+      System.err.println("Unsupported action: " + action);
+      System.exit(5);
+    }
   }
 
   private static Properties readConfig(String configPath) throws IOException
@@ -142,6 +183,7 @@ public class Main
     Options.v().set_soot_classpath(getJARPath());
     Options.v().set_include_all(true);
     Options.v().set_ignore_resolving_levels(true);
+    Options.v().set_process_multiple_dex(true);
 
     // Write (APK Generation) Options
     Options.v().set_output_format(Options.output_format_dex);
@@ -303,5 +345,15 @@ public class Main
       "--ks-pass", "pass:" + keypass,
       output
     });
+  }
+
+  private static void decompileAPK(String input, String output, String platformsPath, String platformVersion) throws IOException
+  {
+    setupSoot(platformsPath, platformVersion, output, input);
+    Options.v().set_output_format(Options.output_format_jimple);
+    Options.v().set_hierarchy_dirs(true);
+
+    PackManager.v().runPacks();
+    PackManager.v().writeOutput();
   }
 }

@@ -10,7 +10,9 @@ You can download `apk-instrumentation.jar` from the [Releases section](https://g
 
 To start the APK conversion process, use the following command:
 
-    java -jar apk-instrumentation.jar [/path/to/config.properties]
+    java -jar apk-instrumentation.jar [--config /path/to/config.properties] [action]
+
+`action` can be either `rewrite` (default) or `decompile`. It is recommendable to run `decompile` action (produces Jimple code) before configuring rewriting steps, output of other decompilers might be incompatible e.g. when determining call signatures.
 
 If no path to `config.properties` is given on the command line, the file is assumed to be present in the current directory. Its entries determine what code transformations should be performed.
 
@@ -21,7 +23,8 @@ The following configuration options are independent of the components enabled:
 * `sdk`: (optional) directory where the Android SDK is installed. If omitted, `ANDROID_HOME` environment variable has to be set.
 * `platformVersion`: (optional) platform version to be loaded in Android SDK. If omitted, will be detected automatically.
 * `input`: path to the input APK file
-* `output`: path of the instrumented APK file to be written
+* `output`: path of the rewritten APK file to be written
+* `decompileDir`: path to write decompiled Jimple code to
 * `keystore`: (optional) path to the key store containing the signing key
 * `keypass`: (optional) password protecting the key store
 
