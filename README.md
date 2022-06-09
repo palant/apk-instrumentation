@@ -1,6 +1,6 @@
 # APK Instrumentation
 
-**Warning**: This is a repository with quick-and-dirty code rewriting tools based on [Soot](https://soot-oss.github.io/soot/) which I use for my own research. The documentation is limited and support cannot be provided. Use at your own risk!
+**Warning**: This is a repository with quick-and-dirty code rewriting tools based on [Soot](https://soot-oss.github.io/soot/) which I use for my own research. It has only been tested with Soot 4.2.1. The documentation is limited and support cannot be provided. Use at your own risk!
 
 ## Getting started
 
@@ -47,6 +47,17 @@ Some components will allow specifying extended format strings for data to be log
 * `args`: Comma-separated list of all arguments (stringified)
 
 In addition, the format specifier `%x` is treated specially: `System.identityHashCode()` will be called on the corresponding input and the result hex-formatted.
+
+## ClassReplacer component
+
+This component will load classes from `.jimple` files and replace existing files with them. You can take the `.jimple` file for a class from the decompilation output, modify it as needed and give the result to this component to replace the original with it.
+
+*Note*: This will do nothing for classes that don’t exist in the original archive.
+
+Configuration options:
+
+* `ClassReplacer.enabled`: add to enable this component
+* `ClassReplacer.classes`: list of paths to `.jimple` files
 
 ## CallLogger component
 

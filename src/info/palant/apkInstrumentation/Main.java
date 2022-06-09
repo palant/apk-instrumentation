@@ -184,6 +184,7 @@ public class Main
     Options.v().set_include_all(true);
     Options.v().set_ignore_resolving_levels(true);
     Options.v().set_process_multiple_dex(true);
+    Options.v().set_whole_program(true);
 
     // Write (APK Generation) Options
     Options.v().set_output_format(Options.output_format_dex);
@@ -227,6 +228,11 @@ public class Main
     if (config.getProperty("StreamLogger.enabled") != null)
     {
       PackManager.v().getPack("jtp").add(new Transform("jtp.StreamLogger", new StreamLogger(config)));
+      hasTransformers = true;
+    }
+    if (config.getProperty("ClassReplacer.enabled") != null)
+    {
+      PackManager.v().getPack("wjtp").add(new Transform("wjtp.ClassReplacer", new ClassReplacer(config)));
       hasTransformers = true;
     }
 

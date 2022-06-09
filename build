@@ -10,8 +10,8 @@ import zipfile
 if len(sys.argv) < 2:
     print('Please provide path to soot-jar-with-dependencies.jar on the command line', file=sys.stderr)
     sys.exit(1)
-soot = sys.argv[1]
 basedir = os.path.dirname(sys.argv[0]) or os.getcwd()
+soot = os.path.abspath(sys.argv[1])
 
 if 'JAVA_HOME' in os.environ:
     javac = os.path.join(os.environ['JAVA_HOME'], 'bin', 'javac')
